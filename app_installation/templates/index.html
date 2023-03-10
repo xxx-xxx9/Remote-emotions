@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+
+{% block head %}
+<style> body {background-color: lightblue; }</style>
+
+<h1> EMOTION DETECTION </h1>
+
+{% endblock %}
+
+
+{% block body %}
+
+
+<form method ="post" action="/">
+  <button type="submit" name="submit_a" value="submit_a" style="height:100px;width:200px;background-color:yellow"> RECORD </button>
+    
+  </button>
+    
+    <div class="result" align="left">
+        <br style="font-size:20px"> Predicted:
+           <p style="font-size:40px">{{ result }}</p>
+            <div class="result" align="left">
+       
+    
+ </button>
+         <br>
+    <div class="result" align="left">
+        <p style="font-size:30px">{{ res1 }}</p>
+        <p style="font-size:30px">{{ p1 }}</p>
+    <div class="result" align="left">
+        <p style="font-size:30px">{{ res2 }}</p>
+        <p style="font-size:30px">{{ p2 }}</p>
+    <div class="result" align="left">
+        <p style="font-size:30px">{{ res3 }}</p>
+        <p style="font-size:30px">{{ p3 }}</p>
+
+
+{% endblock %}
+
+

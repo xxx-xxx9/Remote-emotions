@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<!--link rel="stylesheet" type="text/css" href="style.css" /-->
+		<title>Amotion</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="apple-mobile-web-app-capable" content="yes"><!-- this allows the document to go entirely fullscreen when used as an app on iOS -->
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<meta name="mobile-web-app-capable" content="yes"><!-- this allows the document to go entirely fullscreen when used as an app on Android -->
+		<style>
+			body
+			{
+				margin: 0px;
+				font-family: 'Arial';
+			}
+
+			button.actionBtn
+			{
+				margin: 0;
+				padding: 0;
+				border-color: black;
+				font: inherit;
+				box-sizing: border-box;
+
+				width: 20em;
+				height: 8em;
+				background-color: yellow;
+			}
+
+			button.recoverBtn
+			{
+				margin: 0;
+				padding: 0;
+				border-color: black;
+				font: inherit;
+				box-sizing: border-box;
+
+				width: 20em;
+				height: 8em;
+				background-color: #f80;
+			}
+
+			div.message
+			{
+				width: 20em;
+
+				background-color: #ff8;
+
+				box-sizing: border-box;
+			    padding: 1em;
+			}
+
+			audio
+			{
+				width: 100%;
+			}
+		</style>
+	</head>
+	<script type="text/javascript">
+		function unlockSound(ctx)
+		{
+			// make sure the audio context is unlocked on iOS devices by playing a sound on a user-generated event
+			if (ctx != null)
+			{
+				let source = ctx.createBufferSource();
+				source.buffer = ctx.createBuffer(1, 1, 22050);
+				source.connect(ctx.destination);
+				source.start(0, 0, 0);
+			}
+		}
+
+		function createAudioContext()
+		{
+			let ctx = null;
+			
+			if (typeof AudioContext !== "undefined")
+			{
+				console.log("creating AudioContext");
+				ctx = new AudioContext();
+			}
+			else if (typeof webkitAudioContext !== "undefined")
+			{
+				console.log("creating webkitAudioContext");
+				ctx = new webkitAudioContext();
+			}
+			else
+			{
+				console.log("failed to create audio context");
+				ctx = null;
+			}
+			
+			if (ctx != null)
+			{
+				unlockSound(ctx);
+			}
+			
+			return ctx;
+		}
+	</script>
+	<body>
+		<div id="record-section">
+			<div class="message">
+				<div style="height: 6em; position: relative;">
+					<img src="img/microphone-alt.svg" style="
+						width:4em;
+						position: absolute;
+						top: 50%;
+						left: 50%;
+						-ms-transform: translate(-50%, -50%);
+						transform: translate(-50%, -50%);
+						filter: invert(100%) brightness(0.3) sepia(1) hue-rotate(180deg) saturate(0);"
+						alt="microphone"/>
+				</div>
+			</div>
+			<button class="actionBtn" onclick="beginRecording();">RECORD</button>
+		</div>
+
+		<div id="recording-countdown-section" class="message" style="display:none;">
+			<div style="height: 6em; position: relative;">
+				<img src="img/microphone-alt.svg" style="
+					width:4em;
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					-ms-transform: translate(-50%, -50%);
+					transform: translate(-50%, -50%);
+					filter: invert(100%) brightness(0.3) sepia(1) hue-rotate(180deg) saturate(0);"
+					alt="microphone"/>
+			</div>
+			<br/>
+			<br/>
+		
+			<div id="countdown" style="height: 2em; font-size: 2em; text-align: center;">
+			</div>
+		</div>
+
+		<div id="recording-section" class="message" style="display:none;">
+			<div style="height: 6em; position: relative;">
+				<img src="img/microphone-alt.svg" style="
+					width:4em;
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					-ms-transform: translate(-50%, -50%);
+					transform: translate(-50%, -50%);
+					filter: invert(100%) brightness(0.5) sepia(1) hue-rotate(180deg) saturate(5);"
+					alt="microphone"/>
+			</div>
+			<br/>
+			<br/>
+			
+			Recording in progress. This will take a few seconds to complete.
+		</div>
+
+		<div id="recording-failure-section" style="display:none;">
+			<div class="message">
+				The app was unable to make a recording. Perhaps your device has no microphone, or your browser blocked access to it.
+			</div>
+			<button class="recoverBtn" onclick="recordingFailureProceed();">RESTART</button>
+		</div>
+
+		<div id="resample-failure-section" style="display:none;">
+			<button class="recoverBtn" onclick="resampleFailureProceed();">RESTART</button>
+			<div id="resample-failure-message-section" class="message">
+				...
+			</div>
+		</div>
+
+		<div id="preview-section" class="message" style="display:none;">
+			<div style="height: 6em; position: relative;">
+				<img src="img/microphone-alt.svg" style="
+					width:4em;
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					-ms-transform: translate(-50%, -50%);
+					transform: translate(-50%, -50%);
+					filter: invert(100%) brightness(0.3) sepia(1) hue-rotate(180deg) saturate(0);"
+					alt="microphone"/>
+			</div>
+			<br/>
+			<br/>
+
+			<audio id="player" controls></audio>
+			<br/>
+			<br/>
+			<a id="download">Download recording</a>
+		</div>
+
+		<div id="submission-acknowledge-section" style="display:none;">
+			<div id="recording-section" class="message">
+				Please hit the 'SUBMIT' button when you're happy with the recording, or hit 'RESTART' when you wish to make another recording.
+			</div>
+			<button class="actionBtn" onclick="submissionAcknowledgeSubmit();">SUBMIT</button>
+			<br/>
+			<button class="recoverBtn" onclick="submissionAcknowledgeRestart();">RESTART</button>
+		</div>
+		
+		<div id="submission-working-section" class="message" style="display:none;">
+			Submission in progress..
+		</div>
+
+		<div id="submission-failure-section" style="display:none;">
+			<div id="submission-failure-message-section" class="message">
+				...
+			</div>
+			<button class="actionBtn" onclick="submissionFailureRetry();">RETRY SUBMISSION</button>
+			<br/>
+			<button class="recoverBtn" onclick="submissionFailureRestart();">RESTART</button>
+		</div>
+
+		<div id="submission-success-section" style="display:none;">
+			<button class="actionBtn" onclick="submissionSuccessProceed();">OK</button>
+			<br/>
+			<div class="message">
+				Submission succeeded!
+			</div>
+		</div>
+
+		<script>
+			/*
+
+			Recording process (outline):
+
+			- User clicks 'record' button
+			- Recording starts. After a N-second timeout, the recording is ended
+			- When the recording ends,
+				- Record button is hidden
+				- Preview section is shown
+				- Submission section is shown
+			- When the submission button is clicked,
+				- Async HTTP post request is started to submit audio file
+					- On completion (error or ok)
+						- Submission section is hidden
+					- On success
+						- Success section is shown
+					- On failure
+						- Failure section is shown
+			
+			*/
+
+			// -- CONFIGURATION
+
+			const recordingTime = 4.0; // the duration of the recording to make
+
+			// -- CACHED HTML ELEMENTS FOR CODE ACCESS
+
+			const player = document.getElementById('player');
+			const countdownDiv = document.getElementById('countdown');
+			const downloadLink = document.getElementById('download');
+			const stopButton = document.getElementById('stop');
+
+			const recordSection = document.getElementById('record-section');
+			const recordingCountdownSection = document.getElementById('recording-countdown-section');
+			const recordingSection = document.getElementById('recording-section');
+			const recordingFailureSection = document.getElementById('recording-failure-section');
+			const previewSection = document.getElementById('preview-section');
+			const submissionAcknowledgeSection = document.getElementById('submission-acknowledge-section');
+			const submissionWorkingSection = document.getElementById('submission-working-section');
+			const submissionFailureSection = document.getElementById('submission-failure-section');
+			const submissionSuccessSection = document.getElementById('submission-success-section');
+			const resampleFailureSection = document.getElementById('resample-failure-section');
+			const resampleFailureMessageSection = document.getElementById('resample-failure-message-section');
+			const submissionFailureMessageSecion = document.getElementById('submission-failure-message-section')
+
+			// -- VARIABLES FOR AUDIO RECORDING AND SUBMISSION
+
+			audioContext = null;         // the Web Audio context
+			audioStream = null;          // the microphone input audio stream
+			audioCaptureEnabled = false; // set to true once the count-down completes
+			recordedBuffers = [];        // recorded audio buffers. these will be combined once recording is done
+			recordedSampleRate = 0;      // used for sample rate conversion later
+			recordedBlob = null;         // contains the blob (.wav file) that will be sent to the web server
+
+			// -- DEBUGGING
+
+			debugText = '';
+
+			// -- HELPFUL FUNCTIONS
+
+			const showSection = function(section)
+			{
+				section.style.display = 'block';
+			}
+
+			const hideSection = function(section)
+			{
+				section.style.display = 'none';
+			}
+
+			const addDebugText = function(text)
+			{
+				debugText += text + '<br/>';
+			}
+
+			// -- WEBAUDIO RECORDING FUNCTIONS
+
+			const beginRecording_scriptProcessor = function(stream, captureEnabled)
+			{
+				audioContext = createAudioContext();
+				audioStream = stream;
+				audioCaptureEnabled = captureEnabled;
+				const source = audioContext.createMediaStreamSource(stream);
+				const processor = audioContext.createScriptProcessor(0, 1, 1);
+
+				source.connect(processor);
+				processor.connect(audioContext.destination);
+
+				let recordedLength = 0;
+
+				processor.onaudioprocess = function(e)
+				{
+					//console.log(e.inputBuffer);
+
+					if (audioCaptureEnabled == false)
+						return;
+
+					let channelData = e.inputBuffer.getChannelData(0);
+					let buffer = new Float32Array(channelData.length);
+					for (let i = 0; i < channelData.length; ++i)
+						buffer[i] = channelData[i];
+
+					recordedBuffers.push(buffer);
+
+					addDebugText('add buffer. len: ' + buffer.length);
+
+					//console.log('recordedBuffers: length: ' + recordedBuffers.length);
+
+					// record how many samples we received in total
+
+					recordedLength += buffer.length;
+
+					// end recording if we have enough samples for at least the desired recording time
+
+					if (recordedLength >= recordingTime * audioContext.sampleRate)
+					{
+						endRecording_scriptProcessor();
+					}
+				};
+
+				recordedSampleRate = audioContext.sampleRate;
+			};
+
+			const endRecording_scriptProcessor = function()
+			{
+				audioContext.close()
+					.then(recordingEnded);
+				audioContext = null;
+
+				audioStream.getTracks().forEach(
+					function(track)
+					{
+						if (track.readyState == 'live')
+							track.stop();
+					});
+				audioStream = null;
+			};
+
+			const beginRecording = function()
+			{
+				debugText = '';
+
+				recordedBuffers = [];
+
+				if (navigator.mediaDevices == null)
+				{
+					console.log('no permission to use media devices from browser')
+
+					hideSection(recordSection);
+					showSection(recordingFailureSection);
+				}
+				else
+				{
+					navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 }, video: false })
+						.then(
+							function(audioStream)
+							{
+								var hasAudioInput = false;
+
+								audioStream.getTracks().forEach(
+									function(track)
+									{
+										if (track.kind == 'audio' &&
+											track.readyState == 'live' &&
+											track.muted == false)
+										{
+											hasAudioInput = true;
+										}
+										else
+										{
+											const settings = track.getSettings();
+
+											console.log(
+												   'track: kind=' + track.kind +
+												  ', readyState=' + track.readyState +
+												       ', muted=' + track.muted);
+
+											console.log(settings);
+										}
+									});
+
+								if (hasAudioInput)
+								{
+									beginRecording_scriptProcessor(audioStream, false);
+
+									var todo = 3;
+
+									countdownDiv.innerHTML = todo;
+
+									countdownHandler = function()
+									{
+										todo--;
+
+										if (todo == 0)
+										{
+											hideSection(recordingCountdownSection);
+											showSection(recordingSection);
+
+											countdownDiv.innerHTML = '';
+
+											audioCaptureEnabled = true;
+										}
+										else
+										{
+											countdownDiv.innerHTML = todo;
+
+											setTimeout(countdownHandler, 1000);
+										}
+									};
+
+									setTimeout(countdownHandler, 1300);
+								}
+								else
+								{
+									// todo : test this case
+
+									console.log('audio user media is not ready, muted, or has zero channnels');
+
+									audioStream.getTracks().forEach(
+									function(track)
+									{
+										if (track.readyState == 'live')
+											track.stop();
+									});
+
+									hideSection(recordingCountdownSection);
+									showSection(recordingFailureSection);
+								}
+							})
+						.catch(
+							function(error)
+							{
+								console.log('no access to audio user media: ' + error)
+
+								hideSection(recordingCountdownSection);
+								showSection(recordingFailureSection);
+							});
+
+					hideSection(recordSection);
+					showSection(recordingCountdownSection);
+				}
+			};
+
+			const recordingEnded = function()
+			{
+				hideSection(recordingSection);
+
+				//
+
+				console.log('recording ended')
+
+				let buffer = mergeBuffers(recordedBuffers);
+
+				addDebugText('merged buffer. len: ' + buffer.length);
+
+				let targetSampleRate = 16000;
+
+				resampleBuffer(buffer, recordedSampleRate, targetSampleRate)
+					.then(
+						function(buffer)
+						{
+							recordedBlob = exportWAV(buffer, targetSampleRate);
+
+							try
+							{
+								player.src = URL.createObjectURL(recordedBlob);
+							}
+							catch
+							{
+								console.log('failed to set player.src');
+							}
+
+							console.log('recordedBlob: ' + recordedBlob);
+							console.log('recordedBlob size: ' + recordedBlob.size);
+							console.log('recordedBlob type: ' + recordedBlob.type);
+
+							try
+							{
+								downloadLink.href = URL.createObjectURL(recordedBlob);
+								downloadLink.download = 'recording.wav';
+							}
+							catch
+							{
+								console.log('failed to set downloadLink.href or .download');
+							}
+
+							showSection(previewSection);
+							showSection(submissionAcknowledgeSection);
+						})
+					.catch(
+						function(error)
+						{
+							showSection(resampleFailureSection);
+
+							resampleFailureMessageSection.innerHTML =
+								'Audio conversion failed. Reason: ' + error +
+								'<br/><br/>Extra information:<br/>' + debugText;
+						});
+			};
+
+			const recordingFailureProceed = function()
+			{
+				hideSection(recordingFailureSection);
+				showSection(recordSection);
+			};
+
+			const resampleFailureProceed = function()
+			{
+				hideSection(resampleFailureSection);
+				showSection(recordSection);
+			};
+
+			// -- WAVE FILE SUBMISSION FUNCTIONS
+
+			const submitRecording = function()
+			{
+				const request = new XMLHttpRequest();
+				request.open("POST", "submit_recording", true);
+				request.setRequestHeader("Content-Type", "audio/wave");
+				request.send(recordedBlob);
+
+				request.addEventListener("progress", transferProgress);
+				request.addEventListener("load",     transferComplete);
+				request.addEventListener("error",    transferFailed);
+				request.addEventListener("abort",    transferCanceled);
+			};
+
+			const transferProgress = function(evt)
+			{
+				if (evt.lengthComputable)
+				{
+					let percentComplete = evt.loaded / evt.total * 100;
+					
+					console.log("Transfer progress: " + percentComplete + "%");
+				}
+				else
+				{
+					// unable to compute progress information since the total size is unknown
+				}
+			};
+
+			const transferComplete = function(evt)
+			{
+				console.log("The transfer is complete. Response code: " + evt.currentTarget.status);
+
+				if (evt.currentTarget.status != 200)
+				{
+					console.log("An error occurred while transferring the file: " + evt.currentTarget.responseText);
+
+					// server response codes,
+					// 620 = data missing
+					// 621 = data too large
+					// 622 = recording already exists
+					// ... = other
+
+					const dataMissing = "Submission of the recording to the installation wasn't accepted. The server reports no recording was sent. Something probably went wrong during the recording process.";
+					
+					const dataTooLarge = "Submission of the recording to the installation wasn't accepted. The server reports the recording is too large. Something probably went wrong during the recording process.";
+
+					const queueIsFull = "Submission of the recording to the installation didn't proceed, due to another user having just uploaded another recording. Please wait a few seconds and hit the RETRY SUBMISSION button.";
+
+					const other = "Submission of the recording to the installation didn't proceed. This is probably due to another user having just uploaded another recording. Please wait a few seconds and hit the RETRY SUBMISSION button.";
+
+					if (evt.currentTarget.status == 620)
+						submissionFailureMessageSecion.innerHTML = dataMissing;
+					else if (evt.currentTarget.status == 621)
+						submissionFailureMessageSecion.innerHTML = dataTooLarge;
+					else if (evt.currentTarget.status == 622)
+						submissionFailureMessageSecion.innerHTML = queueIsFull;
+					else
+						submissionFailureMessageSecion.innerHTML = other;
+
+					hideSection(submissionWorkingSection);
+					showSection(submissionFailureSection);
+				}
+				else
+				{
+					console.log("The transfer has succeeded.");
+
+					hideSection(submissionWorkingSection);
+					showSection(submissionSuccessSection);
+				}
+			};
+
+			const transferFailed = function(evt)
+			{
+				console.log("An error occurred while transferring the file.");
+
+				const other = "Submission of the recording to the installation didn't succeed. This is probably due to an issue communicating with the server. Please check your network connectivity and/or wait a few seconds and hit the RETRY SUBMISSION button.";
+
+				submissionFailureMessageSecion.innerHTML = other;
+
+				hideSection(submissionWorkingSection);
+				showSection(submissionFailureSection);
+			};
+
+			const transferCanceled = function(evt)
+			{
+				console.log("The transfer has been canceled by the user.");
+
+				hideSection(submissionWorkingSection);
+				showSection(submissionFailureSection);
+			};
+
+			const submissionAcknowledgeRestart = function()
+			{
+				hideSection(previewSection);
+				hideSection(submissionAcknowledgeSection);
+				showSection(recordSection);
+			};
+
+			const submissionAcknowledgeSubmit = function()
+			{
+				hideSection(submissionAcknowledgeSection);
+				showSection(submissionWorkingSection);
+
+				submitRecording();
+			};
+
+			const submissionSuccessProceed = function()
+			{
+				hideSection(previewSection);
+				hideSection(submissionSuccessSection);
+				showSection(recordSection);
+			};
+
+			const submissionFailureRestart = function()
+			{
+				hideSection(previewSection);
+				hideSection(submissionFailureSection);
+				showSection(recordSection);
+			};
+
+			const submissionFailureRetry = function()
+			{
+				hideSection(submissionFailureSection);
+				showSection(submissionWorkingSection);
+
+				submitRecording();
+			};
+
+			window.OfflineAudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext; // polyfill for OfflineAudioContext
+
+			const resampleBuffer = function(buffer, sampleRate, targetSampleRate)
+			{
+				const resampled = new Promise(function(resolve, reject)
+				{
+					// note : buffer := Float32Array
+
+					// create an audio context for offline rendering,
+					// through which we'll play the recorded audio,
+					// at the target sample rate. the rendered
+					// buffer is returned
+
+					let ctx = new OfflineAudioContext(
+						1, // number of channels
+						buffer.length
+							* targetSampleRate
+							/ parseFloat(sampleRate),
+						targetSampleRate);
+
+					// create the audio buffer to play given the source buffer
+
+					let audioBuffer = ctx.createBuffer(1, buffer.length, sampleRate);
+					let audioChannel = audioBuffer.getChannelData(0);
+	    			for (let i = 0; i < buffer.length; ++i)
+	    				audioChannel[i] = buffer[i];
+
+	    			// create a buffer source node and hook it up to the
+	    			// offline audio context for playback
+
+					let src = ctx.createBufferSource();
+					src.buffer = audioBuffer;
+					src.connect(ctx.destination);
+					src.start(0);
+
+					ctx.oncomplete = function(event)
+					{
+            			console.log('resampled: len: ' + event.renderedBuffer.length);
+
+            			// note : not sure if the contents of getChannelData are guaranteed to persist
+            			//        they probably do, for rendered buffers, but for recording they 
+            			//        definitely do not (buffers get reused). so instead we just
+            			//        make a copy of the channel data
+            			//let buffer = event.renderedBuffer.getChannelData(0);
+
+            			// return a copy of the channel data of the resampled audio buffer
+            			let channelData = event.renderedBuffer.getChannelData(0);
+            			let buffer = new Float32Array(channelData.length);
+						for (let i = 0; i < channelData.length; ++i)
+							buffer[i] = channelData[i];
+
+            			resolve(buffer);
+            		}
+
+					ctx.startRendering();
+
+					//throw 'Testing resample failure case.';
+				});
+
+				return resampled;
+			};
+
+			// -- WAVE FILE EXPORT FUNCTIONS
+
+			// source: https://stackoverflow.com/questions/58785295/use-javascript-to-record-audio-as-wav-in-chrome
+
+			function mergeBuffers(buffers)
+			{
+				let len = 0;
+				for (let i = 0; i < buffers.length; i++)
+					len += buffers[i].length;
+
+				console.log('mergeBuffers: len: ' + len);
+
+				let result = new Float32Array(len);
+				let offset = 0;
+
+				for (let i = 0; i < buffers.length; i++)
+				{
+					result.set(buffers[i], offset);
+					offset += buffers[i].length;
+				}
+
+				return result;
+			}
+
+			function exportWAV(buffer, sampleRate)
+			{
+				let dataView = encodeWAV(buffer, sampleRate, 1);
+				let blob = new Blob([ dataView ], { type: 'audio/wav' });
+				blob.name = Math.floor((new Date()).getTime() / 1000) + '.wav';
+
+				return blob;
+			}
+
+			function floatTo16BitPCM(output, offset, input)
+			{
+				for (let i = 0; i < input.length; i++, offset += 2)
+				{
+					let s = Math.max(-1, Math.min(1, input[i]));
+
+					output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+				}
+			}
+
+			function writeString(view, offset, string)
+			{
+				for (let i = 0; i < string.length; i++) {
+					view.setUint8(offset + i, string.charCodeAt(i));
+				}
+			}
+
+			function encodeWAV(samples, sampleRate, numChannels)
+			{
+				let buffer = new ArrayBuffer(44 + samples.length * 2);
+				let view = new DataView(buffer);
+
+				/* RIFF identifier */
+				writeString(view, 0, 'RIFF');
+				/* file length */
+				view.setUint32(4, 36 + samples.length * 2, true);
+				/* RIFF type */
+				writeString(view, 8, 'WAVE');
+				/* format chunk identifier */
+				writeString(view, 12, 'fmt ');
+				/* format chunk length */
+				view.setUint32(16, 16, true);
+				/* sample format (raw) */
+				view.setUint16(20, 1, true);
+				/* channel count */
+				view.setUint16(22, numChannels, true);
+				/* sample rate */
+				view.setUint32(24, sampleRate, true);
+				/* byte rate (sample rate * block align) */
+				view.setUint32(28, sampleRate * 4, true);
+				/* block align (channel count * bytes per sample) */
+				view.setUint16(32, numChannels * 2, true);
+				/* bits per sample */
+				view.setUint16(34, 16, true);
+				/* data chunk identifier */
+				writeString(view, 36, 'data');
+				/* data chunk length */
+				view.setUint32(40, samples.length * 2, true);
+
+				floatTo16BitPCM(view, 44, samples);
+
+				return view;
+			}
+		</script>
+	</body>
+</html>
