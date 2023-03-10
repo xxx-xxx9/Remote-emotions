@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+
+{% block head %}
+<style> body {background-color: lightblue; }</style>
+
+<h1> EMOTION DETECTION </h1>
+
+{% endblock %}
+
+
+{% block body %}
+
+
+<form method ="post" action="/">
+  <button type="submit" name="submit_a" value="submit_a" style="height:100px;width:200px;background-color:yellow"> RECORD </button>
+    
+  <button type="submit" name="submit_c" value="submit_c" style="height:100px;width:200px;background-color:yellow"> RECORD target </button>
+    
+<button type="submit" name="submit_d" value="submit_d" style="height:100px;width:200px;background-color:pink"> bordone 1 </button>
+
+<button type="submit" name="submit_e" value="submit_e" style="height:100px;width:200px;background-color:pink"> bordone 2 </button>
+    
+    <div class="result" align="left">
+        <br style="font-size:20px"> Predicted:
+           <p style="font-size:40px">{{ result }}</p>
+    
+  <button type="submit" name="submit_b" value="submit_b" style="height:100px;width:200px;background-color:pink"> transf2target </button>
+           
+    <div class="result" align="left">
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+           <p style="font-size:20px;color:blue">{{ MFCCs }}</p>
+
+{% endblock %}
+
+

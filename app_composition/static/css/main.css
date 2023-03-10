@@ -1,0 +1,27 @@
+
+background-img{background-image:url('https://image.freepik.com/free-vector/abstract-background-with-a-watercolor-texture_1048-2144.jpg)
+
+}
+
+body {
+
+    margin: 0;
+    padding: 0;
+    margin-left: 20px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #450;
+	
+}
+
+button {
+		background-color: #4CAF50;
+		border: none;
+		color: white;
+		padding: 15px 32px;
+		text-align: center;
+		text-decoration: none;
+		display: inline-block;
+		font-size: 36px;
+		margin: 4px 2px;
+		cursor: pointer;
+}
