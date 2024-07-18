@@ -1,5 +1,5 @@
 # Remote-emotions
-This repository hosts the coding created to realise the two works described in the paper ‘Remote Emotions: web applications as interfaces for performers and audience to classify the emotional content of their voices live and as tools for Computer-Assisted-Composition’.
+This repository hosts the coding created to realise AmotIon, an installation for Emotion Detection via a classifier implemented with CNNs and audio feedback on metal objects and a tambourine. The coding has been modified and integrate to create an interface for the composition Ni anverso Ni reverso for violin and 4 ventilators.
 
 The folder **app_composition** contains the Flask application with which the violinist can record and classify sounds into 8 emotion categories as well as send data to four ESP32 microcontrollers. In the same folder, there is also an anonymised copy of the **music score**. Inside the **ESP32** folder one can find the code in Micropython used for the microcontrollers.
 
